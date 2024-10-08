@@ -1,0 +1,75 @@
+name: Update Image Contents
+pipelineid: image_contents
+
+scms:
+  github:
+    kind: "github"
+    spec:
+      user: "iurly"
+      email: "iurly@github.com"
+      owner: "iurly"
+      repository: "updatecli-playground"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: "iurly"
+      branch: '{{ requiredEnv "GITHUB_REF_NAME" }}'
+      directory: /runner/_work/updatecli/github/iurly/updatecli-playground
+      commitmessage:
+        type: "chore"
+        hidecredit: true
+      submodules: false
+
+sources:
+  latest_busybox_tag:
+    kind: dockerimage
+    spec:
+      image: docker.io/library/busybox
+      versionfilter:
+        kind: semver
+
+  this_tag:
+    name: Get Current Version
+    kind: file
+    spec:
+      file: docker/version.txt
+
+  next_tag:
+    name: Get Next Version
+    kind: file
+    spec:
+      file: docker/version.txt
+      line: 1
+    transformers:
+      - semverinc: 'patch'
+
+targets:
+  update_busybox_version:
+    name: Update busybox version
+    kind: file
+    sourceid: latest_busybox_tag
+    scmid: github
+    spec:
+      file: docker/Dockerfile
+      matchpattern: 'FROM busybox:.*'
+      replacepattern: 'FROM busybox:{{ source `latest_busybox_tag` }}'
+
+  # This horrid mess is due to https://github.com/updatecli/updatecli/issues/2148
+  bump_version:
+    name: Bump image version to {{ source `next_tag` }}
+    kind: file
+    scmid: github
+    disablesourceinput: true
+    dependsonchange: true
+    dependson:
+      - "update_busybox_version:or"
+    spec:
+      file: docker/version.txt
+      line: 1
+      content: '{{ source `next_tag` }}'
+
+actions:
+  update_deps:
+    kind: github/pullrequest
+    scmid: github
+    spec:
+      title: 'chore: update image version from {{ source `this_tag` }} to {{ source `next_tag` }}'
+      mergemethod: squash

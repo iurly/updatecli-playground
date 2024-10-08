@@ -1,0 +1,30 @@
+---
+name: Dependencies Update
+
+on:
+  workflow_dispatch:
+#  schedule:
+#    # Run once a day
+#    - cron: "30 0 * * *"
+
+permissions:
+  contents: write
+  id-token: write
+  pull-requests: write
+
+jobs:
+
+  updatecli_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Updatecli in the runner
+        uses: updatecli/updatecli-action@v2.68.0
+
+      - name: Check for dependency & update files
+        run: |
+          updatecli apply --config .github/.updatecli.d/contents-and-bump.yaml
+        env:
+          UPDATECLI_GITHUB_TOKEN: "${{ secrets.GIT_TOKEN || secrets.GITHUB_TOKEN }}"
