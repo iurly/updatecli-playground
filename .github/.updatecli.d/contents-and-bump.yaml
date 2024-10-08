@@ -12,7 +12,7 @@ scms:
       token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
       username: "iurly"
       branch: '{{ requiredEnv "GITHUB_REF_NAME" }}'
-      directory: /runner/_work/updatecli/github/iurly/updatecli-playground
+      #directory: /runner/_work/updatecli/github/iurly/updatecli-playground
       commitmessage:
         type: "chore"
         hidecredit: true
